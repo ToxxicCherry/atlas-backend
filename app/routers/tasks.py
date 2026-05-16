@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from app.auth import current_user
 from app.models import UserModel
-from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema
+from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema, TaskType, ProductPositionSchema
 from app.db import get_async_session
 from app import crud
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +33,7 @@ async def get_user_tasks(
     return tasks
 
 @router.get("/{task_id}/results", status_code=200, response_model=list[ProductSchema])
-async def get_task_results(
+async def get_fetch_cards_results(
         task_id: UUID,
         user: UserModel = Depends(current_user),
         db: AsyncSession = Depends(get_async_session),
@@ -44,11 +44,43 @@ async def get_task_results(
     if not task_check:
         raise HTTPException(status_code=404, detail="Task not found or access denied")
 
+    if task_check.type != TaskType.fetch_cards:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid task type",
+        )
+
     if task_check.status != TaskStatus.completed:
         raise HTTPException(
             status_code=400,
             detail=f"Task is in status '{task_check.status.value}'. Please wait for completion."
         )
 
-    products = await crud.get_task_results(db, task_id, task_check.type)
+    products = await crud.get_fetch_cards_results(db, task_id)
     return products
+
+@router.get("/{task_id}/positions", status_code=200, response_model=list[ProductPositionSchema])
+async def get_positions_results(
+        task_id: UUID,
+        user: UserModel = Depends(current_user),
+        db: AsyncSession = Depends(get_async_session),
+):
+    task_check = await crud.get_task_for_user(db, user.id, task_id)
+
+    if not task_check:
+        raise HTTPException(status_code=404, detail="Task not found or access denied")
+
+    if task_check.type != TaskType.track_positions:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid task type",
+        )
+
+    if task_check.status != TaskStatus.completed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Task is in status '{task_check.status.value}'. Please wait for completion."
+        )
+
+    positions = await crud.get_track_positions_results(db, task_id)
+    return positions

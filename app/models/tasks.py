@@ -26,5 +26,6 @@ class TaskModel(Base):
     finished_at: Mapped[datetime | None]= mapped_column(DateTime(timezone=True))
 
     user: Mapped["UserModel"] = relationship('UserModel', back_populates='tasks')
+    positions: Mapped['PositionModel'] = relationship('PositionModel', back_populates='task')
 
 

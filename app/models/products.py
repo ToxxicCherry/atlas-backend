@@ -36,7 +36,7 @@ class ProductModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
-    sizes: Mapped['ProductSizeModel'] = relationship('ProductSizeModel', back_populates='products', cascade='all, delete-orphan')
+    sizes: Mapped[list['ProductSizeModel']] = relationship('ProductSizeModel', back_populates='products', cascade='all, delete-orphan')
     positions: Mapped[list["PositionModel"]] = relationship("PositionModel", back_populates="product")
 
 class TaskProductModel(Base):
