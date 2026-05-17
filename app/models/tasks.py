@@ -1,9 +1,9 @@
 from .base import Base
-from sqlalchemy import DateTime, func, text, ForeignKey, Enum
+from sqlalchemy import DateTime, func, text, ForeignKey, Enum, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from uuid import uuid4, UUID
-from app.schemas import TaskStatus, MarketPlace, TaskType
+from app.schemas import TaskStatus, MarketPlace, TaskType, TrackPositionInterval
 from datetime import datetime
 
 
@@ -17,6 +17,8 @@ class TaskModel(Base):
     source: Mapped[MarketPlace] = mapped_column(Enum(MarketPlace, name='market_place'), default=MarketPlace.wildberries)
     type: Mapped[TaskType] = mapped_column(Enum(TaskType), name='task_type', default=TaskType.fetch_cards)
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus, name='task_status'), default=TaskStatus.pending)
+    track_interval: Mapped[TrackPositionInterval | None] = mapped_column(Integer,nullable=True, default=None)
+    iterations_left: Mapped[int] = mapped_column(default=1)
     priority: Mapped[int] = mapped_column(default=0)
     payload: Mapped[dict] = mapped_column(JSONB)
     total_found: Mapped[int | None]

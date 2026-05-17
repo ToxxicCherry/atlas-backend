@@ -7,7 +7,7 @@ from typing import List, Union, Literal, Annotated
 from .enums import TaskType, MarketPlace
 from uuid import UUID
 from datetime import datetime
-from app.schemas import TaskStatus
+from app.schemas import TaskStatus, TrackPositionInterval
 
 
 
@@ -34,6 +34,9 @@ class CreateTaskSchema(BaseModel):
         Union[FetchCardsPayload, TrackPositionPayload],
         Field(discriminator='type')
         ]
+    track_interval: TrackPositionInterval | None = Field(default=None)
+    iterations_left: int = Field(default=1)
+
 
     @property
     def task_type(self) -> TaskType:

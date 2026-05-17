@@ -46,7 +46,7 @@ async def get_fetch_cards_results(
 
     if task_check.type != TaskType.fetch_cards:
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="Invalid task type",
         )
 
@@ -72,7 +72,7 @@ async def get_positions_results(
 
     if task_check.type != TaskType.track_positions:
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="Invalid task type",
         )
 

@@ -13,7 +13,9 @@ async def create_task(session: AsyncSession, task: CreateTaskSchema, user_id: UU
             user_id=user_id,
             source=task.source,
             type=task.task_type,
-            payload=task.payload.model_dump()
+            payload=task.payload.model_dump(),
+            track_interval=task.track_interval,
+            iterations_left=task.iterations_left,
         ).returning(TaskModel)
     )
 

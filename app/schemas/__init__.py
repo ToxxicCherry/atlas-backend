@@ -7,6 +7,7 @@ __all__ = [
     'MarketPlace',
     'TaskStatus',
     'TaskType',
+    'TrackPositionInterval',
     'CreateTaskSchema',
     'TaskReadSchema',
     'UserReadSchema',
