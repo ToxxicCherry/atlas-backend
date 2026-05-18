@@ -1,12 +1,15 @@
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, Query, HTTPException
 from app.auth import current_user
 from app.models import UserModel
 from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema, TaskType, ProductPositionSchema
 from app.db import get_async_session
+from app.core import get_redis
 from app import crud
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
+from loguru import logger
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -15,10 +18,14 @@ async def create_task(
         task: CreateTaskSchema,
         user: UserModel = Depends(current_user),
         db: AsyncSession = Depends(get_async_session),
+        redis: aioredis.Redis = Depends(get_redis),
 
 ):
 
     created_task = await crud.create_task(db, task, user.id)
+    task_id = str(created_task.id)
+    await redis.lpush('tasks_queue', task_id)
+    logger.success(f"Created task {task_id}")
     return created_task
 
 @router.get("/my", status_code=200, response_model=list[TaskReadSchema])

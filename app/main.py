@@ -5,14 +5,23 @@ from app.schemas import UserReadSchema, UserCreateSchema
 from app.models import  Base
 from app.db import engine
 from app.routers import tasks_router
+from app.core import redis_service
 from contextlib import asynccontextmanager
+
+
+
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    await redis_service.connect("redis://localhost:6379/0")
+
     yield
+
+    await redis_service.close()
 
 
 
