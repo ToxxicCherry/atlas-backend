@@ -5,7 +5,7 @@ class RedisService:
     def __init__(self):
         self.client: aioredis.Redis | None = None
 
-    async def connect(self, url: str = "redis://localhost:6379/0"):
+    async def connect(self, url: str = "redis://atlas-redis:6379/0"):
         logger.info('Connecting to Redis')
         self.client = aioredis.from_url(url, encoding="utf-8")
 

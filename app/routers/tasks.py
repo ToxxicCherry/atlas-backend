@@ -1,8 +1,9 @@
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, Query, HTTPException
-from app.auth import current_user
+import asyncio
+from fastapi import APIRouter, Depends, Query, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException, status
+from app.auth import current_user, get_current_user_websocket
 from app.models import UserModel
-from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema, TaskType, ProductPositionSchema
+from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema, TaskType, ProductPositionSchema, ParseResultSchema
 from app.db import get_async_session
 from app.core import get_redis
 from app import crud
@@ -91,3 +92,52 @@ async def get_positions_results(
 
     positions = await crud.get_track_positions_results(db, task_id)
     return positions
+
+@router.websocket("/ws/{task_id}")
+async def task_websocket_endpoint(
+        websocket: WebSocket,
+        task_id: UUID,
+        redis: aioredis.Redis = Depends(get_redis),
+        user: UserModel = Depends(get_current_user_websocket),
+        db: AsyncSession = Depends(get_async_session)
+):
+
+    task_check = await crud.get_task_for_user(db, user.id, task_id)
+    if not task_check:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+    await websocket.accept()
+    logger.info(f"[WebSocket] Клиент подключился к задаче: {task_id}")
+
+    pubsub = redis.pubsub()
+    channel_name = f"task_updates:{task_id}"
+
+    try:
+        await pubsub.subscribe(channel_name)
+        logger.info(f"[WebSocket] Успешная подписка на Redis канал: {channel_name}")
+
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1)
+
+            if message:
+                raw_data = message["data"].decode('utf-8')
+                parsed_data = ParseResultSchema.model_validate_json(raw_data)
+                await websocket.send_json(parsed_data.model_dump_json())
+
+                if parsed_data.status in (TaskStatus.completed, TaskStatus.failed):
+                    logger.info(f"[WebSocket] Задача {task_id} завершена. Закрываем соединение.")
+                    break
+            await asyncio.sleep(0.01)
+
+    except WebSocketDisconnect:
+        logger.info(f"[WebSocket] Пользователь разорвал соединение для задачи {task_id}")
+
+    except Exception as e:
+        logger.error(f"[WebSocket] Ошибка в работе вебсокета: {e}")
+
+    finally:
+        await pubsub.unsubscribe(channel_name)
+        await pubsub.close()
+        logger.info(f"[WebSocket] Освобождены ресурсы подписки для задачи {task_id}")
+
+

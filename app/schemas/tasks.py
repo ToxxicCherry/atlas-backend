@@ -3,7 +3,7 @@ from pydantic import (
                     Field,
                     ConfigDict,
                     )
-from typing import List, Union, Literal, Annotated
+from typing import List, Union, Literal, Annotated, Optional
 from .enums import TaskType, MarketPlace
 from uuid import UUID
 from datetime import datetime
@@ -54,4 +54,9 @@ class TaskReadSchema(BaseModel):
         Field(discriminator='type')
     ]
     created_at: datetime
+
+class ParseResultSchema(BaseModel):
+    task_id: UUID = Field()
+    status: TaskStatus = Field(default=TaskStatus.completed)
+    error_message: Optional[str] = None
 

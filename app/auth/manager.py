@@ -3,7 +3,7 @@ import os
 import dotenv
 from typing import Optional
 from fastapi import Depends, Request
-from fastapi_users import BaseUserManager, UUIDIDMixin, models
+from fastapi_users import BaseUserManager, UUIDIDMixin
 from app.models import UserModel
 from app.db import get_user_db
 from loguru import logger

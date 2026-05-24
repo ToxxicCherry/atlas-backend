@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    await redis_service.connect("redis://localhost:6379/0")
+    await redis_service.connect("redis://atlas-redis:6379/0")
 
     yield
 

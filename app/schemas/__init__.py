@@ -15,4 +15,6 @@ __all__ = [
     'UserUpdateSchema',
     'ProductSizeSchema',
     'ProductSchema',
+    'ProductPositionSchema',
+    'ParseResultSchema'
 ]
