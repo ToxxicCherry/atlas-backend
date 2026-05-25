@@ -1,6 +1,6 @@
 import redis.asyncio as aioredis
 import asyncio
-from fastapi import APIRouter, Depends, Query, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException, status as f_status
 from app.auth import current_user, get_current_user_websocket
 from app.models import UserModel
 from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema, TaskType, ProductPositionSchema, ParseResultSchema
@@ -32,17 +32,19 @@ async def create_task(
 @router.get("/my", status_code=200, response_model=list[TaskReadSchema])
 async def get_user_tasks(
         status: Optional[TaskStatus] = None,
-        limit: int = Query(10, ge=1, le=100),
-        offset: int = 0,
+        page: int = Query(1, ge=1, le=50),
         user: UserModel = Depends(current_user),
         db: AsyncSession = Depends(get_async_session),
 ):
+    limit = 100
+    offset = (page - 1) * limit
     tasks = await crud.get_user_tasks(db, user.id, limit, offset, status)
     return tasks
 
 @router.get("/{task_id}/results", status_code=200, response_model=list[ProductSchema])
 async def get_fetch_cards_results(
         task_id: UUID,
+        page: int = Query(1, ge=1, le=50),
         user: UserModel = Depends(current_user),
         db: AsyncSession = Depends(get_async_session),
 ):
@@ -64,12 +66,15 @@ async def get_fetch_cards_results(
             detail=f"Task is in status '{task_check.status.value}'. Please wait for completion."
         )
 
-    products = await crud.get_fetch_cards_results(db, task_id)
+    limit = 100
+    offset = (page - 1) * limit
+    products = await crud.get_fetch_cards_results(db, task_id, limit, offset)
     return products
 
 @router.get("/{task_id}/positions", status_code=200, response_model=list[ProductPositionSchema])
 async def get_positions_results(
         task_id: UUID,
+        page: int = Query(1, ge=1, le=50),
         user: UserModel = Depends(current_user),
         db: AsyncSession = Depends(get_async_session),
 ):
@@ -90,7 +95,9 @@ async def get_positions_results(
             detail=f"Task is in status '{task_check.status.value}'. Please wait for completion."
         )
 
-    positions = await crud.get_track_positions_results(db, task_id)
+    limit = 100
+    offset = (page - 1) * limit
+    positions = await crud.get_track_positions_results(db, task_id, limit, offset)
     return positions
 
 @router.websocket("/ws/{task_id}")
@@ -104,7 +111,7 @@ async def task_websocket_endpoint(
 
     task_check = await crud.get_task_for_user(db, user.id, task_id)
     if not task_check:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+        raise WebSocketException(code=f_status.WS_1008_POLICY_VIOLATION)
 
     await websocket.accept()
     logger.info(f"[WebSocket] Клиент подключился к задаче: {task_id}")

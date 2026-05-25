@@ -9,19 +9,22 @@ from typing import Sequence
 from loguru import logger
 
 
-async def get_fetch_cards_results(session: AsyncSession, task_id: UUID) -> Sequence[ProductModel]:
+async def get_fetch_cards_results(session: AsyncSession, task_id: UUID, limit: int, offset: int) -> Sequence[ProductModel]:
     query = (
         select(ProductModel)
         .join(TaskProductModel)
         .where(TaskProductModel.task_id == task_id)
         .options(selectinload(ProductModel.sizes))
+        .limit(limit)
+        .offset(offset)
+
     )
 
     result = await session.execute(query)
     products = result.scalars().all()
     return products
 
-async def get_track_positions_results(session: AsyncSession, task_id: UUID):
+async def get_track_positions_results(session: AsyncSession, task_id: UUID, limit: int, offset: int):
     query = (
         select(PositionModel)
         .distinct(PositionModel.product_id)
@@ -35,6 +38,8 @@ async def get_track_positions_results(session: AsyncSession, task_id: UUID):
             PositionModel.product_id,
             desc(PositionModel.created_at)
         )
+        .limit(limit)
+        .offset(offset)
     )
 
     result = await session.execute(query)
