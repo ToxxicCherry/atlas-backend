@@ -1,6 +1,7 @@
 import redis.asyncio as aioredis
 import asyncio
 from fastapi import APIRouter, Depends, Query, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException, status as f_status
+from fastapi.responses import StreamingResponse
 from app.auth import current_user, get_current_user_websocket
 from app.models import UserModel
 from app.schemas import CreateTaskSchema, TaskReadSchema, TaskStatus, ProductSchema, TaskType, ProductPositionSchema, ParseResultSchema
@@ -147,4 +148,34 @@ async def task_websocket_endpoint(
         await pubsub.close()
         logger.info(f"[WebSocket] Освобождены ресурсы подписки для задачи {task_id}")
 
+@router.get("/{task_id}/export/json")
+async def export_fetch_cards_result(
+        task_id: UUID,
+        user: UserModel = Depends(current_user),
+        db: AsyncSession = Depends(get_async_session),
+):
+    task_check = await crud.get_task_for_user(db, user.id, task_id)
+
+    if not task_check:
+        raise HTTPException(status_code=404, detail="Task not found or access denied")
+
+    if task_check.type != TaskType.fetch_cards:
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid task type",
+        )
+
+    if task_check.status != TaskStatus.completed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Task is in status '{task_check.status.value}'. Please wait for completion."
+        )
+
+    return StreamingResponse(
+        crud.fetch_cards_export(db, task_id),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename=task_{task_id}_results.json"
+        }
+    )
 
