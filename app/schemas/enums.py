@@ -13,6 +13,7 @@ class TaskStatus(enum.Enum):
 class TaskType(str, enum.Enum):
     fetch_cards = "fetch_cards"
     track_positions = "track_positions"
+    fetch_suppliers = "fetch_suppliers"
 
 
 class TrackPositionInterval(enum.IntEnum):

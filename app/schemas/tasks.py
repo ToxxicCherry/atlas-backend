@@ -11,6 +11,12 @@ from app.schemas import TaskStatus, TrackPositionInterval
 
 
 
+class FetchSuppliersPayload(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
+    type: Literal[TaskType.fetch_suppliers] = TaskType.fetch_suppliers
+    query: str
+
 class FetchCardsPayload(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
@@ -31,7 +37,7 @@ class CreateTaskSchema(BaseModel):
 
     source: MarketPlace = Field(default=MarketPlace.wildberries.value)
     payload: Annotated[
-        Union[FetchCardsPayload, TrackPositionPayload],
+        Union[FetchCardsPayload, TrackPositionPayload, FetchSuppliersPayload],
         Field(discriminator='type')
         ]
     track_interval: TrackPositionInterval | None = Field(default=None)
@@ -50,7 +56,7 @@ class TaskReadSchema(BaseModel):
     status: TaskStatus
     type: TaskType
     payload: Annotated[
-        Union[FetchCardsPayload, TrackPositionPayload],
+        Union[FetchCardsPayload, TrackPositionPayload, FetchSuppliersPayload],
         Field(discriminator='type')
     ]
     created_at: datetime
